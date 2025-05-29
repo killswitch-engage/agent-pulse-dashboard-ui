@@ -1,7 +1,10 @@
 
-import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Users, Clock, Star, DollarSign } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Chart, registerables, ChartConfiguration } from 'chart.js';
+import { Users, Clock, Star } from 'lucide-react';
+
+// Register Chart.js components
+Chart.register(...registerables);
 
 const generateAgentData = () => {
   const skills = ['Customer Service', 'Technical Support', 'Sales', 'Data Entry', 'Quality Assurance'];
@@ -16,46 +19,107 @@ const generateAgentData = () => {
 
 export const AgentMetrics = () => {
   const [data, setData] = useState<any[]>([]);
+  const chartRef = useRef<HTMLCanvasElement>(null);
+  const chartInstance = useRef<Chart | null>(null);
 
   useEffect(() => {
     setData(generateAgentData());
   }, []);
 
+  useEffect(() => {
+    if (!data.length || !chartRef.current) return;
+
+    // Destroy existing chart
+    if (chartInstance.current) {
+      chartInstance.current.destroy();
+    }
+
+    const ctx = chartRef.current.getContext('2d');
+    if (!ctx) return;
+
+    const config: ChartConfiguration = {
+      type: 'bar',
+      data: {
+        labels: data.map(d => d.skill),
+        datasets: [
+          {
+            label: 'Available',
+            data: data.map(d => d.available),
+            backgroundColor: '#3b82f6',
+            borderColor: '#3b82f6',
+            borderWidth: 1,
+            borderRadius: 4,
+          },
+          {
+            label: 'Scheduled',
+            data: data.map(d => d.scheduled),
+            backgroundColor: '#10b981',
+            borderColor: '#10b981',
+            borderWidth: 1,
+            borderRadius: 4,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+          },
+          tooltip: {
+            backgroundColor: 'white',
+            borderColor: '#e5e7eb',
+            borderWidth: 1,
+            titleColor: '#374151',
+            bodyColor: '#374151',
+            cornerRadius: 8,
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          }
+        },
+        scales: {
+          x: {
+            grid: {
+              color: '#f0f0f0',
+            },
+            ticks: {
+              color: '#666',
+              maxRotation: 45,
+            }
+          },
+          y: {
+            grid: {
+              color: '#f0f0f0',
+            },
+            ticks: {
+              color: '#666',
+            }
+          }
+        }
+      }
+    };
+
+    chartInstance.current = new Chart(ctx, config);
+
+    return () => {
+      if (chartInstance.current) {
+        chartInstance.current.destroy();
+      }
+    };
+  }, [data]);
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Agent Metrics</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Agent Metrics (Chart.js)</h3>
           <p className="text-sm text-gray-500">Availability and performance by skill set</p>
         </div>
         <Users className="h-5 w-5 text-gray-400" />
       </div>
 
       <div className="h-64 mb-6">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis 
-              dataKey="skill" 
-              stroke="#666" 
-              fontSize={12}
-              angle={-45}
-              textAnchor="end"
-              height={80}
-            />
-            <YAxis stroke="#666" />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: 'white',
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-              }}
-            />
-            <Bar dataKey="available" fill="#3b82f6" name="Available" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="scheduled" fill="#10b981" name="Scheduled" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        <canvas ref={chartRef} />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
