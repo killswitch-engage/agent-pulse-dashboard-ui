@@ -1,10 +1,26 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Chart, registerables, ChartConfiguration } from 'chart.js';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
 import { Users, Clock, Star } from 'lucide-react';
 
 // Register Chart.js components
-Chart.register(...registerables);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const generateAgentData = () => {
   const skills = ['Customer Service', 'Technical Support', 'Sales', 'Data Entry', 'Quality Assurance'];
@@ -19,94 +35,69 @@ const generateAgentData = () => {
 
 export const AgentMetrics = () => {
   const [data, setData] = useState<any[]>([]);
-  const chartRef = useRef<HTMLCanvasElement>(null);
-  const chartInstance = useRef<Chart | null>(null);
 
   useEffect(() => {
     setData(generateAgentData());
   }, []);
 
-  useEffect(() => {
-    if (!data.length || !chartRef.current) return;
-
-    // Destroy existing chart
-    if (chartInstance.current) {
-      chartInstance.current.destroy();
-    }
-
-    const ctx = chartRef.current.getContext('2d');
-    if (!ctx) return;
-
-    const config: ChartConfiguration = {
-      type: 'bar',
-      data: {
-        labels: data.map(d => d.skill),
-        datasets: [
-          {
-            label: 'Available',
-            data: data.map(d => d.available),
-            backgroundColor: '#3b82f6',
-            borderColor: '#3b82f6',
-            borderWidth: 1,
-            borderRadius: 4,
-          },
-          {
-            label: 'Scheduled',
-            data: data.map(d => d.scheduled),
-            backgroundColor: '#10b981',
-            borderColor: '#10b981',
-            borderWidth: 1,
-            borderRadius: 4,
-          }
-        ]
+  const chartData = {
+    labels: data.map(d => d.skill),
+    datasets: [
+      {
+        label: 'Available',
+        data: data.map(d => d.available),
+        backgroundColor: '#3b82f6',
+        borderColor: '#3b82f6',
+        borderWidth: 1,
+        borderRadius: 4,
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'top',
-          },
-          tooltip: {
-            backgroundColor: 'white',
-            borderColor: '#e5e7eb',
-            borderWidth: 1,
-            titleColor: '#374151',
-            bodyColor: '#374151',
-            cornerRadius: 8,
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-          }
+      {
+        label: 'Scheduled',
+        data: data.map(d => d.scheduled),
+        backgroundColor: '#10b981',
+        borderColor: '#10b981',
+        borderWidth: 1,
+        borderRadius: 4,
+      }
+    ]
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      },
+      tooltip: {
+        backgroundColor: 'white',
+        borderColor: '#e5e7eb',
+        borderWidth: 1,
+        titleColor: '#374151',
+        bodyColor: '#374151',
+        cornerRadius: 8,
+      }
+    },
+    scales: {
+      x: {
+        grid: {
+          color: '#f0f0f0',
         },
-        scales: {
-          x: {
-            grid: {
-              color: '#f0f0f0',
-            },
-            ticks: {
-              color: '#666',
-              maxRotation: 45,
-            }
-          },
-          y: {
-            grid: {
-              color: '#f0f0f0',
-            },
-            ticks: {
-              color: '#666',
-            }
-          }
+        ticks: {
+          color: '#666',
+          maxRotation: 45,
+        }
+      },
+      y: {
+        grid: {
+          color: '#f0f0f0',
+        },
+        ticks: {
+          color: '#666',
         }
       }
-    };
-
-    chartInstance.current = new Chart(ctx, config);
-
-    return () => {
-      if (chartInstance.current) {
-        chartInstance.current.destroy();
-      }
-    };
-  }, [data]);
+    }
+  };
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -119,7 +110,7 @@ export const AgentMetrics = () => {
       </div>
 
       <div className="h-64 mb-6">
-        <canvas ref={chartRef} />
+        <Bar data={chartData} options={chartOptions} />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
